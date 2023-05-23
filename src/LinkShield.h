@@ -29,14 +29,12 @@ Last update: 20.5.2020.
 
 //Defining pins used by LinkShield
 #define LINK_RPIN 0             //Potentiometer pin
-#define LINK_FLEX1_PIN 1          //1st FlexSensor pin
-#define LINK_FLEX2_PIN 2          //2nd FlexSensor pin
-#define DC_PWM_PIN 5            //DC motor PWM control pin
-#define DC_DIR_PIN 6       //DC motor direction pin
-#define SERVO_POT_PIN 5
+#define LINK_FLEX_PIN 1          //1st FlexSensor pin
+#define DC_FWD_PIN 5            //DC motor PWM control pin
+#define DC_REV_PIN 6       //DC motor direction pin
+#define SERVO_POT_PIN 2
 
 #define ENCODER 0
-
 #define ENCODER_RESOLUTION 1800
 
 #define I2C_CONNECTED 0
@@ -73,6 +71,8 @@ Last update: 20.5.2020.
 
 class LinkClass {                         //Creating class
 public:
+
+	#include "getKalmanEstimate.inl"
 	void  	begin(void);                  //initialization function
 	void  	calibrate();                  //Calibration function
 	void  	actuatorWritePwm(int);
@@ -90,11 +90,8 @@ public:
 
 	volatile long int count = 0;
 	
-	
 	float 	_voltageToPwm;
 	float 	_voltageToPwmNew;
-
-	#include "getKalmanEstimate.inl" 
 
 private:
 
@@ -151,8 +148,8 @@ void LinkClass::begin() {
 #endif
 
 	// define DC controller pins
-	pinMode(DC_PWM_PIN, OUTPUT);
-	pinMode(DC_DIR_PIN, OUTPUT);
+	pinMode(DC_FWD_PIN, OUTPUT);
+	pinMode(DC_REV_PIN, OUTPUT);
 
 #if ENCODER == 1
 	// define interrupt pins
@@ -204,31 +201,30 @@ void LinkClass::calibrate() {
 
 float LinkClass::flexBias(int testLength) {
 
-	for (int i = 0; i < testLength; i++ ) {                 //Make N measurements
-		_flexSum  = _flexSum + analogRead(LINK_FLEX1_PIN);
+	for (int i = 0; i < testLength; i++ ) {              //Make N measurements
+		_flexSum  = _flexSum + flexRead();
 	}
-	return _flexSum / testLength;                         //Compute average
+	return _flexSum / testLength;                        //Compute average
 }
 
 //values from potentiometer in degrees , for fututre use
 float LinkClass::referenceRead() {
 	_referenceRead = analogRead(LINK_RPIN);
-	_referenceValue = AutomationShield.mapFloat((float)_referenceRead, 0.00, 1023.00, -100.00, 100.00);
+	_referenceValue = AutomationShield.mapFloat((float)_referenceRead, 0.00, 1023.00, -90.00, 90.00)*DEG_TO_RAD;
 	return _referenceValue;
 }
 
 float LinkClass::flexRead() {
-	_flexRead = analogRead(LINK_FLEX1_PIN);
-	_flexValue = AutomationShield.mapFloat((float)_flexRead, 500.00, 550.00, 0.00, 2.50)*DEG_TO_RAD;
+	_flexRead = analogRead(LINK_FLEX_PIN);
+	_flexValue = AutomationShield.mapFloat((float)_flexRead, 500.00, 550.00, 0.00, 2.50)*DEG_TO_RAD/10;
 	if(calibrated)
 	{
 		_flexValue =_flexValue - _zeroBendValue;
 	}
-
-	return -_flexValue;
+	return _flexValue;
 }
 
-#if ENCODER == 1
+#if ENCODER
 float LinkClass::encoderRead() {
 	_encoderAngle = float(LinkShield.count) / (ENCODER_RESOLUTION/360)*DEG_TO_RAD;
 	return _encoderAngle;
@@ -245,50 +241,48 @@ float LinkClass::servoPotRead() {
 void LinkClass::actuatorWritePwm(int _pwmValue) {
 	if (_pwmValue < 0)
 	{
-		digitalWrite(DC_DIR_PIN, LOW);
-		analogWrite(DC_PWM_PIN, _pwmValue);
+		digitalWrite(DC_REV_PIN, LOW);
+		analogWrite(DC_FWD_PIN, _pwmValue);
 	}
 	else
 	{
-		digitalWrite(DC_DIR_PIN, HIGH);
-		analogWrite(DC_PWM_PIN, _pwmValue);
+		digitalWrite(DC_REV_PIN, HIGH);
+		analogWrite(DC_FWD_PIN, _pwmValue);
 	}
 }
 
 void LinkClass::actuatorWritePercent(float _percentValue) {   //Turn DC to desired angle
 	if (_percentValue < 0)
 	{
-		digitalWrite(DC_DIR_PIN, LOW);
-		analogWrite(DC_PWM_PIN, AutomationShield.percToPwm(-_percentValue));
+		digitalWrite(DC_REV_PIN, LOW);
+		analogWrite(DC_FWD_PIN, AutomationShield.percToPwm(-_percentValue));
 	}
 	else
 	{
-		digitalWrite(DC_DIR_PIN, HIGH);
-		analogWrite(DC_PWM_PIN, AutomationShield.percToPwm(_percentValue));
+		digitalWrite(DC_REV_PIN, HIGH);
+		analogWrite(DC_FWD_PIN, AutomationShield.percToPwm(_percentValue));
 	}
 }
 
 void LinkClass::actuatorWriteNew(float _voltageValueNew) {
 	_voltageToPwmNew = sq(_voltageValueNew) * 255 / sq(5);
-
-
-	if (_voltageValueNew < 0)
+	
+	
+	if (_voltageValueNew > 0)
 	{
-		analogWrite(DC_DIR_PIN, (int)_voltageToPwmNew);
-		analogWrite(DC_PWM_PIN, 0);
+		analogWrite(DC_REV_PIN, (int)_voltageToPwmNew);
+		analogWrite(DC_FWD_PIN, 0);
 	}
-	else if(_voltageValueNew > 0)
+	else if(_voltageValueNew < 0)
 	{
-		analogWrite(DC_PWM_PIN, (int)_voltageToPwmNew);
-		analogWrite(DC_DIR_PIN, 0);
+		analogWrite(DC_FWD_PIN, (int)_voltageToPwmNew);
+		analogWrite(DC_REV_PIN, 0);
 	}
 	else
 	{
-		analogWrite(DC_PWM_PIN, 255);
-		analogWrite(DC_DIR_PIN, 255);
+		analogWrite(DC_FWD_PIN, 0);
+		analogWrite(DC_REV_PIN, 0);
 	}
-
-
 }
 
 
@@ -298,13 +292,13 @@ void LinkClass::actuatorWrite(float _voltageValue) {
 
 	if (_voltageValue < 0)
 	{
-		digitalWrite(DC_DIR_PIN, LOW);
-		analogWrite(DC_PWM_PIN, (int)_voltageToPwm);
+		digitalWrite(DC_REV_PIN, LOW);
+		analogWrite(DC_FWD_PIN, (int)_voltageToPwm);
 	}
 	else
 	{
-		digitalWrite(DC_DIR_PIN, HIGH);
-		analogWrite(DC_PWM_PIN, (int)_voltageToPwm);
+		digitalWrite(DC_REV_PIN, HIGH);
+		analogWrite(DC_FWD_PIN, (int)_voltageToPwm);
 	}
 }
 

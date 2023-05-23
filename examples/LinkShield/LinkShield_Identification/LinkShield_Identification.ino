@@ -27,7 +27,7 @@ bool endExperiment = false;           	// Boolean flag to end the experiment
 float y_1 = 0.0;                        	// Output variable
 float y_2 = 0.0;                        	// Output variable
 float u = 0.0;                        	// Input (open-loop), initialized to zero
-float U[]={0.00, 5.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};   	// Input trajectory
+float U[]={0.00, -5.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 5.00, 0.00};   	// Input trajectory
 int T = 25;                         	// Section length (appr. '/.+2 s)
 unsigned long int i = 0;                            	// Section counter
 
@@ -87,7 +87,7 @@ void step(){
 	//LinkShield.actuatorWritePercent(u);	// Actuate with percent of PWM duty cicle
 
 	//Actuate with voltage converted to PWM duty cicle with square root and direction(+/-5V) 
-	LinkShield.actuatorWrite(u);	
+	LinkShield.actuatorWriteNew(u);	
 
 	Serial.print(y_1,8);                     // Print outputs
 	Serial.print(", ");

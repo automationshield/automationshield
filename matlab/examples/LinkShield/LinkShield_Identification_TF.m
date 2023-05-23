@@ -22,13 +22,13 @@
 startScript;                                    % Clears screen and variables, except allows CI testing
 
 %% Data preprocessing
-load resultID.mat                              % Read identificaiton results
-Ts=0.003;                                      % Sampling
-data=iddata(y,u,Ts)                            % Create identification data object
+load LinkShield_ID_Data.mat                             % Read identificaiton results
+Ts=0.005;                                      % Sampling
+data=iddata(Alpha,U,Ts)                            % Create identification data object
                                  
 % Select an appropriate section                   
-dataS  = data([1992:3971]);                    % Select data section (S)
-dataSR = dataS([136:1920]);                    % Refine selection (R)
+%dataS  = data([1992:3971]);                    % Select data section (S)
+%dataSR = dataS([136:1920]);                    % Refine selection (R)
                                        
 %% Transfer function estimation       
 
@@ -36,9 +36,10 @@ dataSR = dataS([136:1920]);                    % Refine selection (R)
 Options = tfestOptions;                        % Create an options object
 Options.Display = 'on';                        % Display procedure
 Options.WeightingFilter = [];                  % No weighting filter
+Options.InitialState = 'zero';
                        
 % Launch and save identification
-sys = tfest(dataSR, 2, 0, Options)              % Identify transfer function
+sys = tfest(data, 2, 0, Options)              % Identify transfer function
 save sys sys                                   % Save transfer function
  
 %% Data and display
@@ -50,6 +51,6 @@ zeta = sys.Denominator(2)/2/omega             % Damping ratio
 c=sys.Numerator(1)/(-omega^2)                 % Actuator constant
 
 % Comparison
-compare(sys,dataS)                            % Comparison of data to model
+compare(sys,data)                            % Comparison of data to model
 xlabel('Time')                                % X axis label
-ylabel('Accel. y(t) ms^{-2}')                 % Y axis label
+ylabel('Angle (rad)')                 % Y axis label

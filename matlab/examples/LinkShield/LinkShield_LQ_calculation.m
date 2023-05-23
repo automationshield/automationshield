@@ -47,15 +47,15 @@ Ci=[zeros(ny,nx) CD];                                            % Augmenting C 
 %% LQ gain calculation
 
 if integrator
-Rlq= 1e-2;
+Rlq= 1e-4;
 %Qlq=diag([1 1.2 0 0 0 0]);
 Qlq=diag([1e-2 1e-10 1e2 1e3 1e-2 1e-2]);
 
 [K, P] = dlqr(Ai, Bi, Qlq, Rlq);
 else 
-Rlq = 1;
+Rlq = 1e-2;
 %Qlq = diag([1e0 3e2 1e-15 1e-15]);
-Qlq = diag([125 1 1 50]);
+Qlq = diag([1250 1 1 75]);
 
 
 [K, P] = dlqr(AD, BD, Qlq, Rlq);
