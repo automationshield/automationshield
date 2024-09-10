@@ -50,6 +50,7 @@
     void error(const char *str);
     float constrainFloat(float x, float min_x, float max_x); 
     byte percToPwm(float perc); 
+	byte voltToPwm(float Vin, float Vmax);
 	float quality(float, char *method); 															// Quality metric for feedback control input
 	
 	// Printing functions

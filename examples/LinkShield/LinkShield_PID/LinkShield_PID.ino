@@ -13,7 +13,7 @@
   Attribution-NonCommercial 4.0 International License.
 
   Created by Martin Vríčan.
-  Last update: 3.12.2022.
+  Last update: 24.05.2023.
 */
 
 #include <LinkShield.h>            	// Include header for hardware API
@@ -26,48 +26,58 @@ bool realTimeViolation = false;     // Flag for real-time sampling violation
 bool endExperiment = false;         // Boolean flag to end the experiment
 
 float y = 0.0;
-float y1 = 0.0;                     // Output variable
-float y2 = 0.0;                     // Output variable
+float y_1 = 0.0;                     // Output variable
+float y_2 = 0.0;                     // Output variable
 float r = 0.0;                        	// Input (open-loop), initialized to zero
 float u = 0.0;
-float R[]={0.00, PI/4, -PI/4, 0.00};
-int T = 1000;                         	// Section length (appr. '/.+2 s)
+float u_slow = 0.0;
+float u_fast = 0.0;
+float R[]={0.00, PI/6, -PI/6, 0.00};
+int T = 10;                         	// Section length (appr. '/.+2 s)
 unsigned int i = 0;                            // Section counter
 
 // PID Tuning
-#define KP 80                        // PID Kp
-#define KI 20.5
-#define KD 0.0001
+#define KP_Slow 85                   
+#define KI_Slow 30
+#define KD_Slow 1
 
-#define TI 0.1                        // PID Ti
-#define TD 0.15                     // PID Td
+#define VIBRATION_CONTROL 0
 
+#define KP_Fast 80					
+#define KI_Fast 50
+#define KD_Fast 0.2
+
+
+PIDAbsClass PIDAbsSlow;
+PIDAbsClass PIDAbsFast;
 
 void setup() {
-
-  Serial.begin(2000000);               // Initialize serial
+  Serial.begin(250000);               // Initialize serial
 
   // Initialize linkshield hardware
   LinkShield.begin();                  // Define hardware pins
-  //LinkShield.calibrate();              // Remove sensor bias
+  LinkShield.calibrate();              // Remove sensor bias
 
   // Initialize sampling function
   Sampling.period(Ts * 1000);          // Sampling init.
   Sampling.interrupt(stepEnable);      // Interrupt fcn.
 
   // Set the PID constants
-  PIDAbs.setKp(KP); // Proportional
-  PIDAbs.setKi(KI); // Integral
-  PIDAbs.setKd(KD); // Derivative
+ PIDAbsSlow.setKp(KP_Slow); // Proportional
+ PIDAbsSlow.setKi(KI_Slow); // Integral
+ PIDAbsSlow.setKd(KD_Slow); // Derivative
   
-  //PIDAbs.setTi(TI); // Integral
-  //PIDAbs.setTd(TD); // Derivative
-  PIDAbs.setTs(Sampling.samplingPeriod); // Sampling
+ PIDAbsFast.setKp(KP_Fast); // Proportional
+ PIDAbsFast.setKi(KI_Fast); // Integral
+ PIDAbsFast.setKd(KD_Fast); // Derivative
+
+ PIDAbsSlow.setTs(Sampling.samplingPeriod); // Sampling
+ PIDAbsFast.setTs(Sampling.samplingPeriod); // Sampling
 }
 
 // Main loop launches a single step at each enable time
 void loop() {
-  if (nextStep) {                     // If ISR enables
+  if (nextStep) {  					  // If ISR enables
     step();                           // Algorithm step
     nextStep = false;                 // Then disable
   }
@@ -75,7 +85,7 @@ void loop() {
 
 void stepEnable() {                                    // ISR
   if (endExperiment == true) {                         // If the experiment is over
-  LinkShield.actuatorWriteVoltage(0.00);
+  LinkShield.actuatorWriteNew(0.00);
     while (1);                                         // Do nothing
   }
   if (nextStep == true) {                              // If previous sample still running
@@ -100,23 +110,33 @@ void step() {
     i++;                          // Increment section counter
   }
 
-	y1 = LinkShield.encoderRead();
-	//y2 = LinkShield.flexRead();          // Read sensor
+	y_1 = LinkShield.servoPotRead();
+	y_2 = LinkShield.flexRead();          // Read sensor
   
-  y  = y1 + y2;
-  u = PIDAbs.compute((r - y), -5, 5, -100, 100); // Compute constrained absolute-form PID
-  
-  	if(y>HALF_PI){u = AutomationShield.constrainFloat(u, -5.0,0.0);}
-	if(y<-HALF_PI){u = AutomationShield.constrainFloat(u,0.0,5.0);}
-	u = AutomationShield.constrainFloat(u,-5.0,5.0);
-  
-  LinkShield.actuatorWriteVoltage(u);         // [V] actuate
+  u_slow =PIDAbsSlow.compute((r - y_1), -5, 5, -30, 30); // Compute constrained absolute-form PID
+ 
+ #if VIBRATION_CONTROL
+ u_fast =PIDAbsFast.compute((y_2), -5, 5, -100, 100); // Compute constrained absolute-form PID
+ u = AutomationShield.constrainFloat((u_slow+u_fast),-5.0,5.0);
+ #else
+ u = AutomationShield.constrainFloat((u_slow),-5.0,5.0);
+ #endif 
+  	  
+  LinkShield.actuatorWriteNew(u);         // [V] actuate
 
   // Print to serial port
-  Serial.print(r);                        // Print reference
+  Serial.print(r);
   Serial.print(", ");
-  Serial.print(y);                        // Print output
+  Serial.print(y_1,8);  // Print reference
+  Serial.print(", ");
+  Serial.print(y_2,8);                        // Print output
+  Serial.print(", ");
+  Serial.print(u_slow);                        // Print output
+  Serial.print(", ");
+  Serial.print(u_fast);                        // Print output
   Serial.print(", ");
   Serial.println(u);                      // Print input
+
+  
   k++;                                    // Increment time-step k
 }

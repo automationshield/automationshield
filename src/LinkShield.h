@@ -140,10 +140,10 @@ void LinkClass::begin() {
 	Wire.begin(); // Starts the "Wire" library for I2C
 	analogReference(EXTERNAL); // Set reference voltage (3v3)
 #elif ARDUINO_ARCH_SAM
-	//analogReadResolution(12);
+	analogReadResolution(12);
 	Wire1.begin(); // Initialize I2C communication
 #elif ARDUINO_ARCH_SAMD
-	//analogReadResolution(12);
+	analogReadResolution(12);
 	Wire.begin(); // Initialize I2C communication
 #endif
 
@@ -182,7 +182,7 @@ void LinkClass::isrB() {
 
 
 void LinkClass::calibrate() {
-	AutomationShield.serialPrint("Calibration...");
+	//AutomationShield.serialPrint("Calibration...");
 	// Go to middle and wait
 	delay(500);
 	_zeroBendValue = flexBias(1000);
@@ -194,7 +194,7 @@ void LinkClass::calibrate() {
 
 	/*   _sensorBias = -(LinkShield.sensorBias(1000)/4);   // Calculate offset to LSB/g
 	ADXL345_OFSZ();  */
-	AutomationShield.serialPrint(" successful.\n");
+	//AutomationShield.serialPrint(" successful.\n");
 }
 
 
@@ -202,26 +202,30 @@ void LinkClass::calibrate() {
 float LinkClass::flexBias(int testLength) {
 
 	for (int i = 0; i < testLength; i++ ) {              //Make N measurements
-		_flexSum  = _flexSum + flexRead();
+		_flexSum  = _flexSum + analogRead(1);
 	}
-	return _flexSum / testLength;                        //Compute average
+	float _flexMidBias = (ADCREF/2) - (_flexSum / testLength);
+	
+	return _flexMidBias;                        //Compute average
 }
 
 //values from potentiometer in degrees , for fututre use
 float LinkClass::referenceRead() {
 	_referenceRead = analogRead(LINK_RPIN);
-	_referenceValue = AutomationShield.mapFloat((float)_referenceRead, 0.00, 1023.00, -90.00, 90.00)*DEG_TO_RAD;
+	_referenceValue = AutomationShield.mapFloat((float)_referenceRead, 0.00, ADCREF, -90.00, 90.00)*DEG_TO_RAD;
 	return _referenceValue;
 }
 
 float LinkClass::flexRead() {
 	_flexRead = analogRead(LINK_FLEX_PIN);
-	_flexValue = AutomationShield.mapFloat((float)_flexRead, 500.00, 550.00, 0.00, 2.50)*DEG_TO_RAD/10;
+	
 	if(calibrated)
 	{
-		_flexValue =_flexValue - _zeroBendValue;
+		_flexRead =_flexRead + _zeroBendValue;
 	}
-	return _flexValue;
+	
+	_flexValue = AutomationShield.mapFloat((float)_flexRead, 0, ADCREF, -25.0, 25.0)*DEG_TO_RAD/10;
+	return - _flexValue;
 }
 
 #if ENCODER
@@ -233,7 +237,7 @@ float LinkClass::encoderRead() {
 
 float LinkClass::servoPotRead() {
 	_potValue = analogRead(SERVO_POT_PIN);
-	_angularValue = AutomationShield.mapFloat(_potValue,100.00,1000.00,-HALF_PI,HALF_PI);
+	_angularValue = AutomationShield.mapFloat(_potValue,0,ADCREF,-110,110)*DEG_TO_RAD;
 	return _angularValue;
 }
 

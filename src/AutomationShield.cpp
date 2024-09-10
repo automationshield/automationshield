@@ -33,6 +33,12 @@ byte AutomationShieldClass::percToPwm(float perc){
 	float percFloat = perc*2.55;
 	return byte(percFloat);
 }
+
+// Turns a floating point input in voltage to 8-bit PWM 
+byte AutomationShieldClass::voltToPwm(float Vin, float Vmax){
+	float voltFloat = sq(Vin) * 255 / sq(Vmax);
+	return byte (voltFloat);
+}
  
  void AutomationShieldClass::error(const char *str) // Error handler function
  {

@@ -51,9 +51,8 @@ BLA::Matrix<4, 1> Xk = {0, 0, 0, 0};
 BLA::Matrix<4, 1> xIC = {0, 0, 0, 0};
 
 
-//BLA::Matrix<1, 4> K = {6.0679, -15.234, 0.40104, -3.6504};
-BLA::Matrix<1, 4> K = {21.927, -116.4, 0.90889, -4.8342};
 
+BLA::Matrix<1, 4> K = {35.829, -173.02, 1.4342, -4.1063};
 
 BLA::Matrix<4, 4> A = {1, 0.03235, 0.00475, 5e-05, 0, 0.9043, 6e-05, 0.00484, 0, 12.508, 0.90345, 0.03235, 0, -37.604, 0.02245, 0.9043};
 BLA::Matrix<4, 1> B = {0.00068, -0.0004, 0.26726, -0.15689};
@@ -70,7 +69,7 @@ void setup() {
 
  // Initialize linkshield hardware
  LinkShield.begin();                  // Define hardware pins
- //LinkShield.calibrate();              // Remove sensor bias
+ LinkShield.calibrate();              // Remove sensor bias
 
  // Initialize sampling function
  Sampling.period(Ts *1000);           // Sampling init.
@@ -160,8 +159,8 @@ Serial.print(", ");
 Serial.print(X(0),4);
 Serial.print(", "); 
 Serial.print(y_2,4);
-//Serial.print(", ");
-//Serial.println(X(1),4);
+Serial.print(", ");
+Serial.print(X(1),4);
 Serial.print(", ");
 Serial.print(Xr(0),4);
 Serial.print(", ");

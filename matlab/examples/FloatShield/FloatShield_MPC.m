@@ -17,12 +17,12 @@
 %   Created by Peter Chmurciak.
 %   Last update: 24.4.2020.
 
-startScript;                                    % Clears screen and variables, except allows CI testing
-clear estimateKalmanState;  % Clears persistent variables in estimate function
-
-FloatShield = FloatShield;          % Create FloatShield object from FloatShield class
-FloatShield.begin('COM4', 'UNO');   % Initialise shield with used Port and Board type
-FloatShield.calibrate();            % Calibrate FloatShield
+% startScript;                                    % Clears screen and variables, except allows CI testing
+% clear estimateKalmanState;  % Clears persistent variables in estimate function
+% 
+% FloatShield = FloatShield;          % Create FloatShield object from FloatShield class
+% FloatShield.begin('COM4', 'UNO');   % Initialise shield with used Port and Board type
+% FloatShield.calibrate();            % Calibrate FloatShield
 
 Ts = 0.025;             % Sampling period in seconds
 k = 1;                  % Algorithm step counter

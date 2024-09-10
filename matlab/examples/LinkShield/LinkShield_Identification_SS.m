@@ -137,6 +137,7 @@ R_Kalman = [5.808465952461661e-03 0;
 Q_Kalman = diag([50 20 1 1]);
 
 
+
 for i=1:length(Uval)
 
 %     Y(1,1) = Theta(i);  
@@ -146,18 +147,43 @@ for i=1:length(Uval)
 
 x(:,i+1) = dA*x(:,i) + dB*Uval(i);
 y(:,i+1) = dC*x(:,i+1); 
-
-
- 
+tt(:,i) = i*Ts-Ts;
 end
+
+
+figure()            
+subplot(2,1,1)
+plot(tt,y(1,2:278))
+hold on
+plot(tt',Theta)
+legend("Simulované dáta", "Merané dáta","Location","southeast")
+xticks(0:0.25:1.5)
+ylim([-0.2 1.7])
+grid on
+ylabel("Theta (Rad)")
+subplot(2,1,2)
+plot(tt,y(2,2:278))
+hold on
+plot(tt',Alpha)
+legend("Simulované dáta", "Merané dáta","Location","southeast")
+xticks(0:0.25:1.5)
+ylim([-0.1 0.05])
+grid on
+ylabel('Alpha (Rad)')
+xlabel ("Čas (s)")
+
+
+
+
+
 %%
-tplot = 0:5:299*5;
+t = 0:5:299*5;
 tplot = t/1000;
 
 
-
+load LinkShield_ID_Data.mat
 subplot(3,1,1)
-stairs(t,U,LineWidth=1.5)
+stairs(tplot,U,LineWidth=1.5)
 legend("U")
 title("Priebeh identifikačného experimentu")
 xticks(0:0.25:1.5)
@@ -165,14 +191,14 @@ ylim([-0.2 5.2])
 grid on
 ylabel("Napätie (V)")
 subplot(3,1,2)
-plot(t,Theta,LineWidth=1.5)
+plot(tplot,Theta,LineWidth=1.5)
 legend("Theta","Location","southeast")
 xticks(0:0.25:1.5)
 ylim([-0.2 1.7])
 grid on
 ylabel("Uhol (Rad)")
 subplot(3,1,3)
-plot(t,Alpha,LineWidth=1.5)
+plot(tplot,Alpha,LineWidth=1.5)
 legend("Alpha","Location","southeast")
 xticks(0:0.25:1.5)
 ylim([-0.1 0.05])

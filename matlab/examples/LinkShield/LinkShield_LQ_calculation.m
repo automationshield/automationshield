@@ -3,7 +3,7 @@ clear; close all; clc
 %% Load identified state space model
 load LinkShield_SSID.mat
 
-R = [0.0, pi/2, -pi/4];
+R = [0.0, pi/2, -pi/4, 0.0];
 T = 1000;
 i = 1;
 
@@ -31,9 +31,11 @@ DD = SYSD.D;
 %% Kalman noise covariance matrices
 R_Kalman = [5.808465952461661e-03 0;
             0 1.266009518986769e-07];
-
+if integrator
+Q_Kalman = diag([1 1 250 100 1 100]);
+else
 Q_Kalman = diag([250 100 1 100]);
-
+end
 %% Create integrator states matrices
 
 [ny, ~ ]=size(C); 
@@ -47,15 +49,15 @@ Ci=[zeros(ny,nx) CD];                                            % Augmenting C 
 %% LQ gain calculation
 
 if integrator
-Rlq= 1e-4;
+Rlq= 1e-5;
 %Qlq=diag([1 1.2 0 0 0 0]);
 Qlq=diag([1e-2 1e-10 1e2 1e3 1e-2 1e-2]);
 
 [K, P] = dlqr(Ai, Bi, Qlq, Rlq);
 else 
-Rlq = 1e-2;
+Rlq = 1e-3;
 %Qlq = diag([1e0 3e2 1e-15 1e-15]);
-Qlq = diag([1250 1 1 75]);
+Qlq = diag([1250 1 1 25]);
 
 
 [K, P] = dlqr(AD, BD, Qlq, Rlq);
@@ -75,6 +77,8 @@ x2p = 0;
 
 umin = -5;
 umax =  5;
+TT = 0;
+ rplot = 0;
 
 Y = zeros(2,2);
 U = zeros(1,length(t));
@@ -131,7 +135,8 @@ for k = 1:length(t)-1
     U(k) = constrain(U(k),umin,umax);
     x(:,k+1) = AD*xhat+BD*U(k);
     y(:,k+1) = CD*x(:,k+1);
- rplot(k)= r(1,1);
+ rplot(k+1)= r(1,1);
+ TT(k+1)=(k)/1000;
 end
 end
 
@@ -140,28 +145,47 @@ end
 figure('Name','Simulacia')
 
 
+
+
 subplot(3,1,1)
-plot(y(2,:),'DisplayName','y2')
-ylabel("Uhol (Rad)")
-title("Alpha")
+plot(TT,y(1,:),'DisplayName','y1')
+hold on
+plot(TT,rplot)
+legend("Meranie","Referencia")
+ylabel("Theta (Rad)")
+grid on
 
 subplot(3,1,2)
-plot(y(1,:),'DisplayName','y1')
-hold on
-title("Theta, R")
-plot(rplot)
-ylabel("Uhol (Rad)")
+plot(TT,y(2,:),'DisplayName','y2')
+ylabel("Alpha (Rad)")
+%legend("Alpha")
+grid on
+
+
 subplot(3,1,3)
-plot(U)
-title("U")
+plot(TT,U)
+xlabel("Čas (s)")
 ylabel("Napätie (V)")
+%legend("U")
+grid on
 
 %% Print matrices in C/C++ format
 
-printSSMatrix(K,'K')
 
+if integrator
+
+printSSMatrix(K,'K')
+printSSMatrix(Ai,'A')
+printSSMatrix(Bi,'B')
+printSSMatrix(Ci,'C')
+printSSMatrix(Q_Kalman,'Q_Kalman')
+printSSMatrix(R_Kalman,'R_Kalman')
+
+else
+printSSMatrix(K,'K')
 printSSMatrix(AD,'A')
 printSSMatrix(BD,'B')
 printSSMatrix(CD,'C')
 printSSMatrix(Q_Kalman,'Q_Kalman')
 printSSMatrix(R_Kalman,'R_Kalman')
+end

@@ -27,7 +27,7 @@ bool endExperiment = false;           	// Boolean flag to end the experiment
 float y_1 = 0.0;                        	// Output variable
 float y_2 = 0.0;                        	// Output variable
 float u = 0.0;                        	// Input (open-loop), initialized to zero
-float U[]={0.00, -5.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 5.00, 0.00};   	// Input trajectory
+float U[]={0.00, 0.00, 5.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};   	// Input trajectory
 int T = 25;                         	// Section length (appr. '/.+2 s)
 unsigned long int i = 0;                            	// Section counter
 
@@ -36,7 +36,7 @@ void setup() {
 
 	// Initialize linkshield hardware
 	LinkShield.begin();                 // Define hardware pins
-	//LinkShield.calibrate();              // Remove sensor bias
+	LinkShield.calibrate();              // Remove sensor bias
 
 	// Initialize sampling function
 	Sampling.period(Ts * 1000);           // Sampling init.
@@ -89,9 +89,9 @@ void step(){
 	//Actuate with voltage converted to PWM duty cicle with square root and direction(+/-5V) 
 	LinkShield.actuatorWriteNew(u);	
 
-	Serial.print(y_1,8);                     // Print outputs
+	Serial.print(y_2,4);                     // Print outputs
 	Serial.print(", ");
-	Serial.print(y_2,8);                     // Print outputs
+	Serial.print(y_1,4);                     // Print outputs
 	Serial.print(", ");
 	Serial.println(u);                    	// Print input
 
