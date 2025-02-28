@@ -66,7 +66,7 @@ void MagnetoShieldClass::dacWrite(uint8_t DAClevel){
 	#endif
 }
 // Write DAC levels (12-bit) to the MCP4725 chip
-#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
 void MagnetoShieldClass::dacWrite(uint16_t DAClevel){	// 16 bits in the form (0,0,0,0,D11,D10,D9,D8,D7,D6,D5,D4,D3,D2,D1,D0)
 	#if ARDUINO_ARCH_AVR || ARDUINO_ARCH_SAMD || ARDUINO_ARCH_RENESAS_UNO 
 		Wire.beginTransmission(MCP4725); 					//addressing
@@ -93,7 +93,8 @@ void MagnetoShieldClass::dacWrite(uint16_t DAClevel){	// 16 bits in the form (0,
 // Calibrates the output readings and measures the input_iterator
 // saturation for the MagnetoShield
 void MagnetoShieldClass::calibration(){
-	uint16_t min, max, minV; 					// Temporary measurements
+	uint16_t min, max; 					// Temporary measurements
+	float minV;
 	
 	// Selects maximum ADC value to filter for any noise.
 	// Magnet cannot get physically lower than ground level.
@@ -117,16 +118,21 @@ void MagnetoShieldClass::calibration(){
 			maxCalibrated=max;					// Save new maximum
 		}	
 	}	
+	dacWrite(0);
+	delay(500);
 	
 	// Measures true coil voltage with magnet fully turned on. Upgrades pre-determined variable.
-	#if SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+	dacWrite(DACMAX);
+	#if SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
+		float volatge = 0.0;
+		float maxV = 9.0;
 		for (int i=1; i<=100; i++) {	    	// Perform 100 measurements
-		 minV = auxReadVoltage(); 				// Measure
-		 if (minV < voltageRef){ 				// If higher than already
-			voltageRef = minV; 		  			// Save new minimum
+		volatge = auxReadVoltage(); 				// Measure
+		 if (volatge > maxV){ 				// If higher than already
+			maxV = volatge; 		  			// Save new minimum
 		 }
 		}
-		setVoltageRef(voltageRef);		// Upgrades voltage level
+		setVoltageRef(maxV);		// Upgrades voltage level
 	#endif
 	
 	// Recalibrate distance based on these
@@ -144,7 +150,7 @@ void MagnetoShieldClass::actuatorWriteVoltage(float u){
     uint8_t dacIn = voltageToDac(u);								// Re-computes DAC levels according to Voltage
     dacIn = constrain(dacIn,IRF520_LSAT,IRF520_HSAT); 				// Constrains to IRF520 saturation
 	dacWrite(dacIn);  	   									  		// Writes to DAC
-	#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+	#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
 	uint16_t dacIn = voltageToDac(u);							    // Re-computes DAC levels according to Voltage
 	dacIn = constrain(dacIn,0,DACMAX);								// Constrain input into acceptable range
 	dacWrite(dacIn);  	   											// Writes to DAC
@@ -161,7 +167,7 @@ void MagnetoShieldClass::actuatorWritePercents(float u){
 	
 	#if SHIELDRELEASE == 1 || SHIELDRELEASE == 2
 		float maxV = VIN
-	#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4	
+	#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4	|| SHIELDRELEASE == 5
 		float maxV = getVoltageRef();	
 	#endif
 	u = AutomationShield.mapFloat(u,0.0,100.0,0.0,maxV); 
@@ -199,7 +205,7 @@ float MagnetoShieldClass::sensorReadGauss(){
 float MagnetoShieldClass::adcToGauss(uint16_t adc){	
 	#if SHIELDRELEASE == 1
 	float y=(2.5-(float)adc*ARES)*HALL_SENSITIVITY;
-	#elif SHIELDRELEASE == 2 || SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+	#elif SHIELDRELEASE == 2 || SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
 	float y=(2.5-(float)adc*ARES3V3)*HALL_SENSITIVITY;
 	#endif
 	return  y;
@@ -222,7 +228,7 @@ float MagnetoShieldClass::gaussToDistance(float g){
 		uint8_t dacOut = (uint8_t)(round(P1*pow(vOut,P2)+P3*exp((vOut*P4))));
 		return dacOut;
 	}
-#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+#elif SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
 	uint16_t MagnetoShieldClass::voltageToDac(float vOut){
 		float dacOutTemp=round((P1 * pow(vOut,3)) + (P2 * pow(vOut,2)) + (P3 * vOut) + P4);
 		if (dacOutTemp<=0.0) dacOutTemp=0.0;		// Prevent negative values
@@ -232,7 +238,7 @@ float MagnetoShieldClass::gaussToDistance(float g){
 #endif
 	
 
-#if SHIELDRELEASE == 2 || SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+#if SHIELDRELEASE == 2 || SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
 	// Default sensor reading method - returns value from 0 to 100
 	float MagnetoShieldClass::referenceRead(){	
 		return  (AutomationShield.mapFloat(analogRead(MAGNETO_RPIN),0.0,ADCREF,0.0,100.0));
@@ -252,7 +258,7 @@ float MagnetoShieldClass::gaussToDistance(float g){
 	}
 #endif
 
-#if SHIELDRELEASE == 3 || SHIELDRELEASE == 4
+#if SHIELDRELEASE == 3 || SHIELDRELEASE == 4 || SHIELDRELEASE == 5
 // Returns reference voltage for calculation DAC levels to voltage (4095 = voltageRef)
 float MagnetoShieldClass::getVoltageRef(){
 	return voltageRef;

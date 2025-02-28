@@ -21,7 +21,8 @@
   Created by Gergely Takács.
   Last update: 13.10.2020
 */
-#include <MagnetoShield.h>            // Include header for hardware API
+//#define SHIELDRELEASE 5          // Shield Release number (look at bottom of the Shield PCB)
+#include <MagnetoShield.h>       // Include header for hardware API
 #include <Sampling.h>            // Include sampling
 
 // Manual or automatic reference?
@@ -125,7 +126,7 @@ void step(){
 
 // Control algorithm
 y = MagnetoShield.sensorRead();         // [mm] sensor read
-u = PIDAbs.compute(-(r-y),0,MagnetoShield.getVoltageRef(),-10,10);      // Compute constrained absolute-form PID
+u = PIDAbs.compute(-(r-y),0,MagnetoShield.getVoltageRef(),-20,20);      // Compute constrained absolute-form PID
 MagnetoShield.actuatorWrite(u);         // [V] actuate
 
 // Print to serial port

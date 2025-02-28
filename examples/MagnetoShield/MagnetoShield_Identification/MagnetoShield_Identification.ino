@@ -22,7 +22,7 @@
   Created by Gergely Takács.
   Last update: 26.08.2020.
 */
-
+//#define SHIELDRELEASE 5          // Shield Release number (look at bottom of the Shield PCB)
 #include <MagnetoShield.h>            // Include header for hardware API
 #include <Sampling.h>            // Include sampling
 

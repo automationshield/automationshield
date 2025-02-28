@@ -27,6 +27,7 @@
 //   Last update on:   30.9.2020
 //   Tested on:        Arduino Mega2560
 
+//#define SHIELDRELEASE 5          // Shield Release number (look at bottom of the Shield PCB)
 #include <MagnetoShield.h>
 #include <Sampling.h>
 

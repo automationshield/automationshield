@@ -25,7 +25,7 @@
   Created on:  9.9.2020
   Last update: 23.9.2020.
 */
-
+//#define SHIELDRELEASE 5          // Shield Release number (look at bottom of the Shield PCB)
 #include <MagnetoShield.h>                            // Include main library  
 #include <Sampling.h>                                 // Include sampling library
 #include "MagnetoShield_muAO-MPC/MagnetoShield_MPC.h"               // Include muAO-MPC compiled files

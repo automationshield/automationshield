@@ -25,7 +25,7 @@
 //   Last updated by:  Gergely Takacs
 //   Last update on:   24.9.2020
 
-
+//#define SHIELDRELEASE 5          // Shield Release number (look at bottom of the Shield PCB)
 #include <MagnetoShield.h>
 #include <Sampling.h>
 
