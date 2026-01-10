@@ -40,11 +40,11 @@
 #ifdef ARDUINO_ARCH_RENESAS_UNO
     #include <FspTimer.h>
     void GPTimerCbk(timer_callback_args_t __attribute((unused)) *p_args);
+    void GPTimerCbkServo(timer_callback_args_t __attribute((unused))* p_args);
 #endif
 
 typedef void (*p_to_void_func)(); /*define a term p_to_void_func for pointer to function, which
                   has a return type void and has no input parameters*/
-
 
 
 namespace SamplingNoServo {
@@ -119,6 +119,7 @@ namespace SamplingNoServo {
 
         unsigned long int samplingMicroseconds; // Sampling period in microseconds
         bool setSamplingPeriod(unsigned long microseconds);
+        static bool isInitialized;
     };
 } // end of namespace
 

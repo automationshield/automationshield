@@ -33,7 +33,7 @@
 #include "SamplingCore.h"
 
 ////////////////////////////////////// NO SERVO //////////////////////////////////////
-
+bool SamplingNoServo::SamplingClass::isInitialized = false;
 void SamplingNoServo::SamplingClass::defaultInterrupt()
 {
 }
@@ -123,48 +123,55 @@ void SamplingNoServo::SamplingClass::period(unsigned long microseconds) {
     NVIC_EnableIRQ(TC5_IRQn);                         //  ISR for the interrupt
 
   #elif ARDUINO_ARCH_RENESAS_UNO
-    uint8_t timer_type = GPT_TIMER;
-    int8_t tindex = FspTimer::get_available_timer(timer_type);
-    if (tindex < 0){
-      tindex = FspTimer::get_available_timer(timer_type, true);
-    }
-    if (tindex < 0){
-      #ifdef ECHO_TO_SERIAL
-        Serial.println("NO timer available");
-      #endif
-    }
-    if(tindex < GTP32_HOWMANY) { // if you get 32bit timer set correct resolution
-        /* timer a 32 BIT */
-        timerResolution = 4294967296;
-    }
-      
-    if (!setSamplingPeriod(microseconds)){
-      #ifdef ECHO_TO_SERIAL
-        Serial.println("Sampling period is too long.\nMax is xxxx microseconds.");
-      #endif
-    }
-    FspTimer::force_use_of_pwm_reserved_timer();
+    if (!isInitialized) {
+        isInitialized = true;  
 
-    if(!sampling_timer.begin(TIMER_MODE_PERIODIC, timer_type, tindex, period_counts, 0.0f, prescaler, GPTimerCbk)){
-      #ifdef ECHO_TO_SERIAL
-        Serial.println("Sampling error: did not begin");
-      #endif
-    }
-    if (!sampling_timer.setup_overflow_irq()){
-      #ifdef ECHO_TO_SERIAL
-        Serial.println("Sampling error: setup overflov irq failed");
-      #endif
-    }
+        uint8_t timer_type = GPT_TIMER;
+        //int8_t tindex = FspTimer::get_available_timer(timer_type);
+        int8_t tindex = 2;
+        if (tindex < 0) {
+            //tindex = FspTimer::get_available_timer(timer_type, true);
+        }
+        if (tindex < 0) {
+#ifdef ECHO_TO_SERIAL
+            Serial.println("NO timer available");
+#endif
+        }
+        if (tindex < GTP32_HOWMANY) { // if you get 32bit timer set correct resolution
+            /* timer a 32 BIT */
+            timerResolution = 4294967296;
+        }
 
-    if (!sampling_timer.open()){
-      #ifdef ECHO_TO_SERIAL
-        Serial.println("Sampling error: timer did not open");
-      #endif
+        if (!setSamplingPeriod(microseconds)) {
+#ifdef ECHO_TO_SERIAL
+            Serial.println("Sampling period is too long.\nMax is xxxx microseconds.");
+#endif
+        }
+        FspTimer::force_use_of_pwm_reserved_timer();
+
+        if (!sampling_timer.begin(TIMER_MODE_PERIODIC, timer_type, tindex, period_counts, 0.0f, prescaler, GPTimerCbk)) {
+            Serial.println("Sampling error: did not begin");
+        }
+        if (!sampling_timer.setup_overflow_irq()) {
+            Serial.println("Sampling error: setup overflow irq failed");
+        }
+        if (!sampling_timer.open()) {
+            Serial.println("Sampling error: timer did not open");
+        }
+        if (!sampling_timer.start()) {
+            Serial.println("Sampling error: timer did not start");
+        }
+        
+
+
     }
-    if (!sampling_timer.start()){
-      #ifdef ECHO_TO_SERIAL
-        Serial.println("Sampling error: timer did not start");
-      #endif
+    else {
+
+        if (!setSamplingPeriod(microseconds)) {
+            Serial.println("Sampling period is too long.\nMax is xxxx microseconds.");
+        }
+
+        sampling_timer.set_period(period_counts);
     }
 
   #else
@@ -434,9 +441,10 @@ void SamplingServo::SamplingClass::period(unsigned long microseconds) {
     NVIC_EnableIRQ(TC1_IRQn);                         //  ISR for the interrupt
   #elif ARDUINO_ARCH_RENESAS_UNO
     uint8_t timer_type = GPT_TIMER;
-    int8_t tindex = FspTimer::get_available_timer(timer_type);
+    //int8_t tindex = FspTimer::get_available_timer(timer_type);
+    int8_t tindex = 4;
     if (tindex < 0){
-      tindex = FspTimer::get_available_timer(timer_type, true);
+      //tindex = FspTimer::get_available_timer(timer_type, true);
     }
     if (tindex < 0){
       #ifdef ECHO_TO_SERIAL
@@ -455,7 +463,7 @@ void SamplingServo::SamplingClass::period(unsigned long microseconds) {
     }
     FspTimer::force_use_of_pwm_reserved_timer();
 
-    if(!sampling_timer.begin(TIMER_MODE_PERIODIC, timer_type, tindex, period_counts, 0.0f, prescaler, GPTimerCbk)){
+    if(!sampling_timer.begin(TIMER_MODE_PERIODIC, timer_type, tindex, period_counts, 0.0f, prescaler, GPTimerCbkServo)){
       #ifdef ECHO_TO_SERIAL
         Serial.println("Sampling error: did not begin");
       #endif

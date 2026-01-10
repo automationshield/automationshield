@@ -16,7 +16,7 @@
 */
 
 #include "AeroShield.h"         // Include header file
-
+ //#include <SamplingStepper.h>
 // Initializes hardware pins
 float AeroClass::begin(void){                                 // Board initialisation
   #if  defined(ARDUINO_ARCH_AVR) || defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_RENESAS_UNO)  // For AVR, SAMD, Renesas architecture boards
@@ -41,6 +41,7 @@ float AeroClass::begin(void){                                 // Board initialis
         }
     }
   }       
+  //SamplingStepper.period(1000);
 } 
 
 bool AeroClass::calibrate(void){                          // Calibration 

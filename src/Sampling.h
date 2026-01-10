@@ -52,6 +52,7 @@ void TC5_Handler(void){
 }
 
 #elif ARDUINO_ARCH_RENESAS_UNO
+#define GPTimer GPTimerCbk
   #include "sampling/SamplingUNO_R4_ISR.h"
 
 #else

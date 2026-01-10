@@ -22,7 +22,7 @@
 #include "lib/BasicLinearAlgebra/BasicLinearAlgebra.h"     // Include library for matrix operations
 
 #ifndef SHIELDRELEASE
-	#define SHIELDRELEASE 4   					//  Use number only: e.g. for R3 is 3
+	#define SHIELDRELEASE 3   					//  Use number only: e.g. for R3 is 3
 #endif
 
 
