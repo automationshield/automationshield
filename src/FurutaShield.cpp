@@ -1,6 +1,6 @@
 #include "FurutaShield.h"
 
-#include "SamplingStepper.h" // Uncomment this line if you want to use FurutaShield; otherwise, leave it commented.
+//#include "SamplingStepper.h" // Uncomment this line if you want to use FurutaShield; otherwise, leave it commented.
 
 AS5600 as5600;
 
