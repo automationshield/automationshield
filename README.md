@@ -10,10 +10,10 @@ Arduino, MATLAB and Simulink API and example collection for the AutomationShield
 ## Downloading and Installing the AutomationShield Library
 
 ### I don't know Git
-If you are not familiar with Git (command line), please download the latest release of the library from the [Releases](https://github.com/gergelytakacs/AutomationShield/releases) section, as the production code download does not include certain dependencies. Search for the `AutomationShield_vX.Y.tar` file in the Assets, where `vX.Y` is the major and minor version number of the release. Do not use the Source Code files in the Assets, since these lack the dependent code as well.
+If you are not familiar with Git (command line), please download the latest release of the library from the [Releases](https://github.com/automationshield/automationshield/releases) section, as the production code download does not include certain dependencies. Search for the `AutomationShield_vX.Y.tar` file in the Assets, where `vX.Y` is the major and minor version number of the release. Do not use the Source Code files in the Assets, since these lack the dependent code as well.
 
 ### I use Git
-For those who wish to use Git, this repository contains submodules, therefore you should use `git clone --recursive git://github.com/gergelytakacs/AutomationShield.git` to get these as well. In case you have already cloned the repository, the submodule directories in `src/lib/` may be empty. In this case, you have to initialize it by calling `submodule update --init --recursive`.
+For those who wish to use Git, this repository contains submodules, therefore you should use `git clone --recursive git://github.com/automationshield/automationshield.git` to get these as well. In case you have already cloned the repository, the submodule directories in `src/lib/` may be empty. In this case, you have to initialize it by calling `submodule update --init --recursive`.
 
 ## Interfaces
 
@@ -46,7 +46,7 @@ OptoShield.actuatorWrite(u);
 ```
 sets the actuator to `u`. Inputs and outputs are floating point numbers.
 
-Please consult our [Wiki page](https://github.com/gergelytakacs/AutomationShield/wiki) for more details and board specific instructions.
+Please consult our [Wiki page](https://github.com/automationshield/automationshield/wiki) for more details and board specific instructions.
 
 ## Examples
 
