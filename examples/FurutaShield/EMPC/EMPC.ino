@@ -1,7 +1,7 @@
 #include <FurutaShield.h>   // Include main library
 #include <SamplingServo.h>  // Include sampling library
 
-#include "ectrl.h"  // Include header file for EMPC controller
+//#include "ectrl_due.h"  // Include header file for EMPC controller
 
 #include <empcSequential.h>
 

@@ -3,7 +3,7 @@
 #include "furuta_ekf_model.h"
 //asdasdasdasdassda
 
-#include "ectrl.h"  // Include header file for EMPC controller
+//#include "ectrl_due.h"  // Include header file for EMPC controller
 #include <empcSequential.h>
 
 ekf_t ekf;
