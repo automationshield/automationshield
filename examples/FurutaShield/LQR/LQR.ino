@@ -1,7 +1,11 @@
-#include "FurutaShield.h"
+#include <FurutaShield.h>
 #include <SamplingServo.h>
 
-#define TS 10
+
+#define MANUAL 0                                                    // Choose manual reference using potentiometer (1) or automatic reference trajectory (0)
+float R[] = { 0.0, 1.0, -0.55, 1.0, 0.35, -0.35, -0.8, 1.0, 0.0 };  // Reference trajectory for MANUAL 0
+
+#define TS 10.0
 
 float Ksu, Kq, Kdq, Ke, eta;
 
@@ -15,6 +19,8 @@ float beta = PI;
 float w0 = sqrt((mp * g * lp) / Ip);
 float w1 = mp * g * lp / 2;
 int wmax = 100;
+float amax = (3 * PI / 4);  //Limit for arm angle
+
 float E0 = 0.00183447;
 int h;
 const int stop = 5000;
@@ -26,37 +32,22 @@ bool STOP = false;
 bool enable = false;
 bool realTimeViolation = false;
 
+int T = 600;          // Section length
+int i = 0;            // Section counter
+unsigned long k = 0;  // Sample index
 
 unsigned long prevTime;
 
-BLA::Matrix<4, 1> X;
+BLA::Matrix<5, 1> X;
 BLA::Matrix<4, 1> X1;
 
 
 BLA::Matrix<2, 1> Y;
 
-BLA::Matrix<2, 4> H = { 1, 0, 0, 0, 0, 0, 1, 0 };
-BLA::Matrix<4, 4> Q_kalman = {
-  0.0001, 0, 0, 0,
-  0, 0.0001, 0, 0,
-  0, 0, 0.00001, 0,
-  0, 0, 0, 0.00001
-};
+BLA::Matrix<1, 1> Xr;
 
-BLA::Matrix<2, 2> R_kalman = { 1e-12, 0, 0, 1e-10 };
+BLA::Matrix<1, 5> K = { 0.0901, -10.6209, -6.2091, -308.0191, -36.7630};
 
-BLA::Matrix<1, 4> K = { -0.8840, -1.6925, -213.6926, -18.2625 };
-//BLA::Matrix<1, 5> K = { -19.0138, 3.6472, 3.7027, -30.1155, -24.2531 };
-BLA::Matrix<2, 1> prevOutput;
-
-BLA::Matrix<4, 4> A = {
-  1.0, 0.01, 0, 0,
-  0, 1.0, 0, 0,
-  0, 0, 1.0067, 0.01,
-  0, 0, 1.338, 1.0027
-};
-
-BLA::Matrix<4, 1> B = { 0.0001, 0.01, -0.0001, -0.0136 };
 
 void setup() {
   FurutaShield.begin();
@@ -64,7 +55,7 @@ void setup() {
   FurutaShield.actuatorWrite(u);
   Serial.begin(115200);
 
-  BLA::Matrix<5, 1> parseData = FurutaShield.parseControlData();
+  BLA::Matrix<5, 1> parseData = FurutaShield.swingUpPar();
 
   Ksu = parseData(0);
   Kq = parseData(1);
@@ -84,14 +75,14 @@ void loop() {
   if ((Serial.available() > 0) || (STOP)) {
     char incomingByte = Serial.read();
 
-    if (incomingByte == 'S') {
-      Serial.println(Y);
+    if (incomingByte == 'S' || (STOP)) {
       while (1) {
 
-        FurutaShield.actuatorWrite(stop);
+        FurutaShield.emergStop();
       }
     }
   }
+
   if (enable) {
     step();
     enable = false;
@@ -112,37 +103,55 @@ void step() {
   Y = FurutaShield.sensorRead();
 
 
-  if (-0.5 <= Y(1) && Y(1) <= 0.5) {
-    if (!up)
+  if (abs(FurutaShield.wrapToPi(Y(1))) <= 0.3) {
 
-    up = true;
+#if MANUAL
+    Xr = AutomationShield.mapFloat(FurutaShield.referenceRead(), 0, 100, -3 * M_PI / 4, 3 * M_PI / 4);
+#elif !MANUAL
+    if (i >= sizeof(R) / sizeof(float)) {  // If trajectory ended
+      while (true) {
+        FurutaShield.emergStop();  // Stop the Motor
+      }                            // End of program execution
+    }
+    if (k % (T * i) == 0) {  // Moving through trajectory values
+      //r = R[i];
+      Xr = R[i];
+      i++;  // Change input value after defined amount of samples
+    }
+    k++;  // Increment
+#endif
+
     u = -float((K * (X))(0, 0));
 
-    if (abs(X(0)) >= PI) {
-      STOP = true;
-    }
-  } else {
-    up = false;
 
-    u = FurutaShield.swingUp(Ksu, Kq, Kdq, Ke, eta, X, wmax, (3 * PI / 4), E0);
+  } else {
+
+
+    u = FurutaShield.swingUp(Ksu, Kq, Kdq, Ke, eta, X1, wmax, amax, mp, lp);
   }
 
-  //u = 0;
-  //X1 = ekf(u, Y, H, Q_kalman, R_kalman);
-  X = FurutaShield.estimate(Y, H);
-  //u = sat(u, 50, -50);
+  if (isnan(u)) {
+    u = stop;
+    STOP = true;
+  }
 
-  
 
-  X(2) = FurutaShield.wrapToPi(X(2));
-  //X1(2) = FurutaShield.wrapToPi(X1(2));
+  X1 = FurutaShield.estimate(Y);
+  X1(2) = FurutaShield.wrapToPi(X1(2));
 
+  X(0) += (Xr(0) - Y(0));
+  X(1) = X1(0);
+  X(2) = X1(1);
+  X(3) = X1(2);
+  X(4) = X1(3);
+
+
+  u = sat(u, 100.0, -100.0);
   FurutaShield.actuatorWrite(u);
 
-  Serial.print("0");
-  Serial.print(" ");
 
-  Serial.print(X(0));
+
+  Serial.print(Xr(0));
   Serial.print(" ");
 
   Serial.print(X(1));
@@ -154,77 +163,16 @@ void step() {
   Serial.print(X(3));
   Serial.print(" ");
 
+  Serial.print(X(4));
+  Serial.print(" ");
+
   Serial.print(u);
   Serial.print(" ");
 
-  Serial.print(X1(0));
-  Serial.print(" ");
-
-  Serial.print(X1(1));
-  Serial.print(" ");
-
-  Serial.print(X1(2));
-  Serial.print(" ");
-
-  Serial.print(X1(3));
-  Serial.print(" ");
 
   Serial.println();
 }
 
-
-
-
-
-
-
-
-
-template<int n>  // Template function definition
-BLA::Matrix<n, 1> ekf(float systemInput, BLA::Matrix<2, 1> &measuredOutput, BLA::Matrix<2, n> &C, BLA::Matrix<n, n> &Q, BLA::Matrix<2, 2> &R) {
-  static BLA::Matrix<n, 1> x_hat;  // State matrix
-  static BLA::Matrix<n, n> P;      // Covariance matrix
-  static BLA::Matrix<n, n> I;      // Eye matrix
-  BLA::Matrix<n, 1> f;
-  BLA::Matrix<n, n> F;
-  static bool wasInitialised = false;  // Boolean used to initialize static variables at the start
-  static unsigned long _prevMill = 0;
-
-
-  if (!wasInitialised) {  // Initialise static variables
-    x_hat = (~C * measuredOutput);
-    P.Fill(0);  // Initialise covariance matrix with zeros
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        I(i, j) = (i == j) ? 1.0 : 0.0;  // Create eye matrix I
-      }
-    }
-    wasInitialised = true;  // Flag initialisation as complete
-  }
-
-  // Prediction
-
-  float ddtheta1 = 0.75 * cos(x_hat(2)) * sin(x_hat(2)) * pow(x_hat(1), 2) - 0.40106952 * x_hat(3) + 133.77273 * sin(x_hat(2)) - 1.3636364 * systemInput * cos(x_hat(2));
-
-  f(0) = x_hat(1);
-  f(1) = systemInput;
-  f(2) = x_hat(3);
-  f(3) = ddtheta1;
-
-  x_hat = x_hat + ((float)TS / 1000) * f;
-
-
-  F = { 0, 1, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 1,
-        0, 1.5 * x_hat(1) * cos(x_hat(2)) * sin(x_hat(2)), 133.77273 * cos(x_hat(2)) + 0.75 * pow(x_hat(1), 2) * pow(cos(x_hat(2)), 2) - 0.75 * pow(x_hat(1), 2) * pow(sin(x_hat(2)), 2) + 1.3636364 * systemInput * sin(x_hat(2)), -0.40106952 };
-
-  P = F * P * ~F + Q;  // Calculate error covariance
-
-  // Update
-  BLA::Matrix<n, 2> K = P * ~C * (Inverse(C * P * ~C + R));
-  x_hat = x_hat + K * (measuredOutput - (C * x_hat));  // Update the state estimate
-  P = (I - K * C) * P;                                 // Update error covariance matrix
-
-  return x_hat;  // Return vector of estimated states
+float sat(float u, float umax, float umin) {
+  return (u > umax ? umax : (u < umin ? umin : u));
 }
