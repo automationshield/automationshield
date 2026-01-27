@@ -1,17 +1,9 @@
-name: Build (MATLAB)
-on: [push]
-jobs:
-  my-job:
-    name: Run MATLAB Tests and Generate Artifacts
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Install MATLAB
-        uses: matlab-actions/setup-matlab@v1.2.4
-        with:
-          release: R2021a
-      - name: Run script
-        uses: matlab-actions/run-command@v1.2.1
-        with:
-          command: build_matlab
+- name: Install MATLAB
+  uses: matlab-actions/setup-matlab@v2
+  with:
+    release: R2021a
+
+- name: Run script
+  uses: matlab-actions/run-command@v2
+  with:
+    command: build_matlab
